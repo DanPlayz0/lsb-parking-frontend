@@ -7,7 +7,11 @@ const GREEN = 'oklch(0.8 0.2 150)';
 const BLUE = 'oklch(0.8 0.2 250)';
 const GRAY = 'oklch(0.7 0 0)';
 
-export default function ParkingCanvas({ latestSnapshots, refreshedAt }: { latestSnapshots: LatestSnapshot[]; refreshedAt: Date | null }) {
+export default function ParkingCanvas({ latestSnapshots, refreshedAt, onStationSelect }: {
+  latestSnapshots: LatestSnapshot[];
+  refreshedAt: Date | null;
+  onStationSelect: (station: LatestSnapshot) => void;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -53,11 +57,23 @@ export default function ParkingCanvas({ latestSnapshots, refreshedAt }: { latest
   }, [latestSnapshots, refreshedAt]);
 
   return (
+    <div className="parking-map">
     <canvas
       ref={canvasRef}
       width={320}
       height={227}
       className="parking-canvas"
+      aria-hidden="true"
     ></canvas>
+    {latestSnapshots.map((station) => {
+      const [y, x] = station.name.slice(1).split(' ').map(Number).slice(0, 2);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+      return <button key={station.device_id} type="button" className="parking-map-station"
+        style={{ left: `${(75 * x - 65) / 320 * 100}%`, top: `${y * 45 / 227 * 100}%`,
+          width: `${70 / 320 * 100}%`, height: `${40 / 227 * 100}%` }}
+        aria-label={`${station.name}: ${availablePlugCount(station)} of ${station.outlet_count} plugs available. View recent updates`}
+        aria-haspopup="dialog" onClick={() => onStationSelect(station)} />;
+    })}
+    </div>
   );
 }

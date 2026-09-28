@@ -43,6 +43,42 @@ body {
   background-repeat: repeat;
 }
 
+.parking-map {
+  position: relative;
+  width: 320px;
+  max-width: 100%;
+  margin: auto;
+}
+
+.parking-map canvas { display: block; }
+
+.parking-map-station {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.parking-map-station:hover { background: rgb(255 255 255 / 15%); }
+.parking-map-station:focus-visible { outline: 3px solid white; outline-offset: 2px; }
+.station-group { cursor: pointer; }
+.station-history-trigger {
+  padding: 0.2rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.station-history-trigger:focus-visible { outline: 2px solid currentColor; }
+.station-history-list { padding-left: 1.5rem; }
+.station-history-list li { padding: 0.8rem 0; border-bottom: 1px solid #393d52; }
+.station-history-list time { display: block; margin-top: 0.35rem; color: #c3c6d4; font-size: 0.875rem; }
+
 .selection-row {
   max-width: 100%;
   flex-wrap: wrap;

@@ -54,6 +54,10 @@ export function fetchLatestSnapshots({ include_faculty_parking = true, signal }:
   return fetchUpstream<LatestSnapshot[]>(`/snapshots?include_faculty_parking=${include_faculty_parking}`, signal);
 }
 
+export function fetchStationHistory(deviceId: number, signal?: AbortSignal) {
+  return fetchUpstream<PlugSnapshot[]>(`/stations/${deviceId}/history`, signal);
+}
+
 export function createSnapshotSocket({ include_faculty_parking = true } = {}) {
   const url = new URL(API_BASE_URL);
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';

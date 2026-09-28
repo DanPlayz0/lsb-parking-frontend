@@ -15,6 +15,7 @@ import {
   type ThisWeeklyHourlyAverage,
 } from './api';
 import ParkingCanvas from './components/parking-canvas';
+import StationHistoryDialog from './components/station-history-dialog';
 import { useAlignedInterval } from './utils/useAlignedInterval';
 import { useLiveSnapshots } from './utils/useLiveSnapshots';
 import RelativeTime from './components/relative-time';
@@ -195,6 +196,7 @@ function stationStatusClass(station: LatestSnapshot) {
 
 function App() {
   const { snapshots: rawLatestSnapshots, refreshedAt, status, forceRefresh, paused } = useLiveSnapshots();
+  const [selectedStation, setSelectedStation] = useState<LatestSnapshot | null>(null);
   const [weeklyHourly, setWeeklyHourly] = useState<AllTimeWeeklyHourlyAverage[]>(fillMissingWeeklyHours([]));
   const [thisWeeklyHourly, setThisWeeklyHourly] = useState<ThisWeeklyHourlyAverage[]>(fillMissingWeeklyHours([]));
   const [parkingFaculty, setParkingFaculty] = useState(false);
@@ -218,7 +220,7 @@ function App() {
     <>
       <h1 className="non-standard-font title">LSB EV Parking Spots</h1>
       <div className="canvas-container">
-        <ParkingCanvas latestSnapshots={rawLatestSnapshots} refreshedAt={refreshedAt} />
+        <ParkingCanvas latestSnapshots={rawLatestSnapshots} refreshedAt={refreshedAt} onStationSelect={setSelectedStation} />
       </div>
       <div className="card">
         <div className="selection-row" id="snapshot-options">
@@ -264,7 +266,7 @@ function App() {
               </tr>
             </thead>
             {latestSnapshots.map((station) => (
-              <tbody className="station-group" key={station.device_id}>
+              <tbody className="station-group" key={station.device_id} onClick={() => setSelectedStation(station)}>
                 {station.plugs.map((plug, index) => {
                   let statusClass = 'color-orange';
                   if (isPlugAvailable(plug)) statusClass = 'color-green';
@@ -274,7 +276,11 @@ function App() {
                     <tr key={`${station.device_id}-${plug.outlet_number}`} className={statusClass}>
                       {index === 0 && (
                         <td className={`station-name ${stationStatusClass(station)}`} rowSpan={station.plugs.length}>
-                          {station.name}
+                          <button type="button" className="station-history-trigger" aria-haspopup="dialog"
+                            aria-label={`View recent updates for ${station.name}`}
+                            onClick={(event) => { event.stopPropagation(); setSelectedStation(station); }}>
+                            {station.name}
+                          </button>
                         </td>
                       )}
                       <td>{plug.outlet_number}</td>
@@ -305,6 +311,8 @@ function App() {
           </div>
         </div>
       </div>
+      {selectedStation && <StationHistoryDialog key={selectedStation.device_id} station={selectedStation}
+        refreshedAt={refreshedAt} onClose={() => setSelectedStation(null)} />}
     </>
   );
 }
