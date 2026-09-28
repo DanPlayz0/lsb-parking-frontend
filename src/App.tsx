@@ -20,8 +20,8 @@ import RelativeTime from './components/relative-time';
 import { BarChart } from '@mui/x-charts';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const ALL_TIME_COLOR = 'oklch(0.8 0.2 250)';
-const THIS_WEEK_COLOR = 'oklch(0.8 0.2 150)';
+const ALL_TIME_COLOR = 'oklch(0.72 0.15 250)';
+const THIS_WEEK_COLOR = 'oklch(0.82 0.16 80)';
 
 function sortStations(snapshots: LatestSnapshot[], sort: string) {
   if (sort === 'name') {
