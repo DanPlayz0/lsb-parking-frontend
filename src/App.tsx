@@ -19,6 +19,10 @@ import { useLiveSnapshots } from './utils/useLiveSnapshots';
 import RelativeTime from './components/relative-time';
 import { BarChart } from '@mui/x-charts';
 
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const ALL_TIME_COLOR = 'oklch(0.8 0.2 250)';
+const THIS_WEEK_COLOR = 'oklch(0.8 0.2 150)';
+
 function sortStations(snapshots: LatestSnapshot[], sort: string) {
   if (sort === 'name') {
     snapshots.sort((a, b) => a.name.localeCompare(b.name));
@@ -35,8 +39,95 @@ function sortStations(snapshots: LatestSnapshot[], sort: string) {
 }
 
 function formatChartLabel(data: AllTimeWeeklyHourlyAverage | ThisWeeklyHourlyAverage) {
-  const day = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][data.day_of_week_num];
-  return `${day} ${data.hour_label} PST - ${data.avg_available || 0} avg available`;
+  const day = DAY_NAMES[data.day_of_week_num];
+  return `${day} ${data.hour_label} PT - ${data.avg_available || 0} avg available`;
+}
+
+function formatHourLabel(hour: number) {
+  const hour12 = hour % 12 || 12;
+  return `${hour12.toString().padStart(2, '0')} ${hour < 12 ? 'AM' : 'PM'}`;
+}
+
+function weeklyHourKey(point: AllTimeWeeklyHourlyAverage) {
+  return `${point.day_of_week_num}-${point.hour_num}`;
+}
+
+function fillMissingWeeklyHours<T extends AllTimeWeeklyHourlyAverage>(data: T[]): T[] {
+  const pointsByHour = new Map(data.map((point) => [weeklyHourKey(point), point]));
+
+  return Array.from({ length: 7 * 24 }, (_, index) => {
+    const day = Math.floor(index / 24);
+    const hour = index % 24;
+    return pointsByHour.get(`${day}-${hour}`) ?? {
+      day_of_week_num: day,
+      hour_num: hour,
+      hour_label: formatHourLabel(hour),
+      avg_available: 0,
+    } as T;
+  });
+}
+
+function WeeklyHourlyChart({
+  allTime,
+  thisWeek,
+}: {
+  allTime: AllTimeWeeklyHourlyAverage[];
+  thisWeek: ThisWeeklyHourlyAverage[];
+}) {
+  const maximum = Math.max(1, ...allTime.map((point) => point.avg_available), ...thisWeek.map((point) => point.avg_available));
+  const visibleBarValue = (value: number) => value === 0 ? Number.EPSILON : value;
+
+  return (
+    <div className="weekly-chart">
+      <div className="chart-legend" aria-label="Chart legend">
+        <span><i style={{ backgroundColor: ALL_TIME_COLOR }} />All-time average</span>
+        <span><i style={{ backgroundColor: THIS_WEEK_COLOR }} />This week average</span>
+      </div>
+      <BarChart
+        height={360}
+        hideLegend
+        grid={{ horizontal: true }}
+        margin={{ top: 12, right: 16, bottom: 68, left: 42 }}
+        series={[
+          {
+            label: 'Average Available Plugs (all time)',
+            data: allTime.map((point) => visibleBarValue(point.avg_available || Number.EPSILON)),
+            color: ALL_TIME_COLOR,
+            minBarSize: 2,
+            valueFormatter: (_, context) => formatChartLabel(allTime[context.dataIndex]),
+          },
+          {
+            label: 'Average Available Plugs (this week)',
+            data: thisWeek.map((point) => visibleBarValue(point.avg_available || Number.EPSILON)),
+            color: THIS_WEEK_COLOR,
+            minBarSize: 2,
+            valueFormatter: (_, context) => formatChartLabel(thisWeek[context.dataIndex]),
+          },
+        ]}
+        xAxis={[{
+          scaleType: 'band',
+          // Band-axis values must be unique. Reusing the same 24 hour labels for
+          // every day collapses the domain and makes the chart stop at the last
+          // hour that has data instead of reserving all 168 weekly slots.
+          data: allTime.map(weeklyHourKey),
+          valueFormatter: (value) => formatHourLabel(Number(value.split('-')[1])),
+          tickLabelInterval: (_value, index) => index % 6 === 0,
+          groups: [{
+            getValue: (_value, index) => DAY_NAMES[Math.floor(index / 24)],
+            tickSize: 28,
+            tickLabelStyle: { fill: '#fff', fontWeight: 600 },
+          }],
+        }]}
+        yAxis={[{ min: 0, max: maximum }]}
+        sx={{
+          backgroundColor: 'transparent',
+          '& .MuiChartsAxis-tickLabel': { fill: '#fff' },
+          '& .MuiChartsAxis-line, & .MuiChartsAxis-tick': { stroke: 'rgba(255, 255, 255, 0.55)' },
+          '& .MuiChartsGrid-line': { stroke: 'rgba(255, 255, 255, 0.14)' },
+        }}
+      />
+    </div>
+  );
 }
 
 function formatTimestamp(timestamp: string) {
@@ -59,8 +150,8 @@ function stationStatusClass(station: LatestSnapshot) {
 
 function App() {
   const { snapshots: rawLatestSnapshots, refreshedAt, status, forceRefresh, paused } = useLiveSnapshots();
-  const [weeklyHourly, setWeeklyHourly] = useState<AllTimeWeeklyHourlyAverage[]>([]);
-  const [thisWeeklyHourly, setThisWeeklyHourly] = useState<ThisWeeklyHourlyAverage[]>([]);
+  const [weeklyHourly, setWeeklyHourly] = useState<AllTimeWeeklyHourlyAverage[]>(fillMissingWeeklyHours([]));
+  const [thisWeeklyHourly, setThisWeeklyHourly] = useState<ThisWeeklyHourlyAverage[]>(fillMissingWeeklyHours([]));
   const [parkingFaculty, setParkingFaculty] = useState(false);
   const [sortBy, setSortBy] = useState('name');
 
@@ -70,10 +161,10 @@ function App() {
   }, [rawLatestSnapshots, sortBy, parkingFaculty]);
 
   useAlignedInterval(() => {
-    void Promise.all([fetchWeeklyHourlyAverages(), fetchThisWeeklyHourlyAverages()])
+    void Promise.allSettled([fetchWeeklyHourlyAverages(), fetchThisWeeklyHourlyAverages()])
       .then(([allTime, thisWeek]) => {
-        setWeeklyHourly(allTime);
-        setThisWeeklyHourly(thisWeek);
+        setWeeklyHourly(fillMissingWeeklyHours(allTime.status === 'fulfilled' ? allTime.value : []));
+        setThisWeeklyHourly(fillMissingWeeklyHours(thisWeek.status === 'fulfilled' ? thisWeek.value : []));
       })
       .catch((error) => console.error('Unable to refresh historical averages:', error));
   }, 15, true, !paused);
@@ -156,22 +247,7 @@ function App() {
             * Data points are taken every minute
           </p>
           <div className="chart-container">
-            <BarChart
-              style={{ background: 'transparent' }}
-              loading={weeklyHourly.length === 0 || thisWeeklyHourly.length === 0}
-              series={[
-                {
-                  label: 'Average Available Plugs (all time)',
-                  data: weeklyHourly.map((point) => point.avg_available || 0),
-                  valueFormatter: (_, context) => formatChartLabel(weeklyHourly[context.dataIndex]),
-                },
-                {
-                  label: 'Average Available Plugs (this week)',
-                  data: thisWeeklyHourly.map((point) => point.avg_available || 0),
-                  valueFormatter: (_, context) => formatChartLabel(thisWeeklyHourly[context.dataIndex]),
-                },
-              ]}
-            />
+            <WeeklyHourlyChart allTime={weeklyHourly} thisWeek={thisWeeklyHourly} />
           </div>
         </div>
       </div>
