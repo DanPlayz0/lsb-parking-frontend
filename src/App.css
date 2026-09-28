@@ -67,11 +67,44 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  max-width: 425px;
+  max-width: 760px;
+  overflow-x: auto;
 }
 
 #snapshot-container th, #snapshot-container td {
   padding: 0.2rem;
+  white-space: nowrap;
+}
+
+.refresh-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.connection-status::before {
+  content: '';
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--orange);
+}
+
+.connection-status.live::before {
+  background: var(--green);
+}
+
+.connection-status.polling::before {
+  background: var(--orange);
 }
 @media screen and (min-width: 475px) {
   #snapshot-container {

@@ -26,5 +26,5 @@ export function useAlignedInterval(task: () => void, intervalSeconds: number, in
       clearTimeout(timeoutId);
       if (intervalId) clearInterval(intervalId);
     };
-  }, [intervalSeconds]);
+  }, [intervalSeconds, instantRun]);
 }

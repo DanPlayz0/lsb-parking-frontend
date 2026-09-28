@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { LatestSnapshot } from '../api';
+import { availablePlugCount, type LatestSnapshot } from '../api';
 
 const RED = 'oklch(0.8 0.2 30)';
 const ORANGE = 'oklch(0.8 0.2 80)';
@@ -16,8 +16,7 @@ export default function ParkingCanvas({ latestSnapshots, refreshedAt }: { latest
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.font = '20px Arial';
     if (!latestSnapshots.length) {
-      // Hey! 👀 This handles no data (aka waiting on API or network error)
-      // the API gets called every 15 seconds, so there should almost always be data within 15 seconds of loading
+      // This handles the initial connection and API/network failures.
       ctx.textAlign = 'center';
       ctx.fillStyle = 'lightgray';
       ctx.fillRect(30, 30, 260, 167);
@@ -28,6 +27,7 @@ export default function ParkingCanvas({ latestSnapshots, refreshedAt }: { latest
     }
     ctx.textAlign = 'left';
     for (const snapshot of latestSnapshots) {
+      const available = availablePlugCount(snapshot);
       const [y, x] = snapshot.name
         .slice(1)
         .split(' ')
@@ -35,7 +35,7 @@ export default function ParkingCanvas({ latestSnapshots, refreshedAt }: { latest
         .slice(0, 2);
       if (isNaN(x) || isNaN(y)) continue;
       const availabilityColor =
-        y == 1 && x == 4 ? (snapshot.available > 0 ? BLUE : RED) : snapshot.available == 0 ? RED : snapshot.available > 1 ? GREEN : ORANGE;
+        y == 1 && x == 4 ? (available > 0 ? BLUE : RED) : available == 0 ? RED : available > 1 ? GREEN : ORANGE;
       ctx.fillStyle = availabilityColor;
 
       const posX = 75;
@@ -43,7 +43,7 @@ export default function ParkingCanvas({ latestSnapshots, refreshedAt }: { latest
       ctx.fillRect(posX * x - (posX - 10), y * 45, posX - 5, 40);
 
       ctx.fillStyle = 'black';
-      ctx.fillText(`${snapshot.available}/${snapshot.total}`, x * posX - (posX - 10) + 5, y * 45 + 27);
+      ctx.fillText(`${available}/${snapshot.outlet_count}`, x * posX - (posX - 10) + 5, y * 45 + 27);
     }
   }, [latestSnapshots, refreshedAt]);
 
