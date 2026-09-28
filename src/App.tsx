@@ -245,12 +245,17 @@ function App() {
         </div>
 
         <div id="snapshot-container">
+          <div className="mobile-status-key" aria-label="Status key">
+            <span>Green = Available</span>
+            <span>Red = In use</span>
+            <span>Orange = Other</span>
+          </div>
           <table>
             <thead>
               <tr>
                 <th>Station</th>
                 <th>Plug</th>
-                <th>Status</th>
+                <th className="status-column">Status</th>
                 <th>Age</th>
                 <th>Last Updated</th>
               </tr>
@@ -267,7 +272,7 @@ function App() {
                         </td>
                       )}
                       <td>{plug.outlet_number}</td>
-                      <td>{plug.status}</td>
+                      <td className="status-column">{plug.status}</td>
                       <td><RelativeTime isoString={plug.updated_at} /></td>
                       <td>{formatTimestamp(plug.updated_at)}</td>
                     </tr>
