@@ -14,6 +14,19 @@ export interface PlugSnapshot {
   updated_at: string;
 }
 
+const HAS_TIMEZONE = /(?:Z|[+-]\d{2}:?\d{2})$/i;
+
+/**
+ * The database historically returned UTC timestamps without an offset. Treat
+ * those values as UTC instead of letting the browser interpret them as local
+ * time. Offset-aware timestamps continue to be parsed normally.
+ */
+export function parseApiTimestamp(timestamp: string | Date) {
+  if (timestamp instanceof Date) return timestamp;
+  const normalized = HAS_TIMEZONE.test(timestamp) ? timestamp : `${timestamp}Z`;
+  return new Date(normalized);
+}
+
 export interface LatestSnapshot {
   device_id: number;
   name: string;
@@ -61,7 +74,7 @@ export const usedPlugCount = (station: LatestSnapshot) => station.plugs.filter(i
 
 export function latestStationUpdate(station: LatestSnapshot) {
   return station.plugs.reduce((latest, plug) => {
-    const updatedAt = new Date(plug.updated_at).getTime();
+    const updatedAt = parseApiTimestamp(plug.updated_at).getTime();
     return Number.isNaN(updatedAt) ? latest : Math.max(latest, updatedAt);
   }, 0);
 }

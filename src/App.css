@@ -160,3 +160,18 @@ table {
   color: black;
   background-color: var(--orange);
 }
+
+.station-group:has(.color-green:hover) .station-name {
+  color: black;
+  background-color: var(--green);
+}
+
+.station-group:has(.color-red:hover) .station-name {
+  color: black;
+  background-color: var(--red);
+}
+
+.station-group:has(.color-orange:hover) .station-name {
+  color: black;
+  background-color: var(--orange);
+}

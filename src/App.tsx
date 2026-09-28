@@ -7,6 +7,7 @@ import {
   isPlugAvailable,
   isPlugInUse,
   latestStationUpdate,
+  parseApiTimestamp,
   usedPlugCount,
   type AllTimeWeeklyHourlyAverage,
   type LatestSnapshot,
@@ -39,7 +40,7 @@ function formatChartLabel(data: AllTimeWeeklyHourlyAverage | ThisWeeklyHourlyAve
 }
 
 function formatTimestamp(timestamp: string) {
-  const date = new Date(timestamp);
+  const date = parseApiTimestamp(timestamp);
   return date.toLocaleString('en', {
     month: '2-digit',
     day: '2-digit',
@@ -114,22 +115,22 @@ function App() {
                 <th>Last Updated</th>
               </tr>
             </thead>
-            <tbody>
-              {latestSnapshots.flatMap((station) =>
-                station.plugs.map((plug, index) => {
+            {latestSnapshots.map((station) => (
+              <tbody className="station-group" key={station.device_id}>
+                {station.plugs.map((plug, index) => {
                   const statusClass = isPlugAvailable(plug) ? 'color-green' : isPlugInUse(plug) ? 'color-red' : 'color-orange';
                   return (
                     <tr key={`${station.device_id}-${plug.outlet_number}`} className={statusClass}>
-                      {index === 0 && <td rowSpan={station.plugs.length}>{station.name}</td>}
+                      {index === 0 && <td className="station-name" rowSpan={station.plugs.length}>{station.name}</td>}
                       <td>{plug.outlet_number}</td>
                       <td>{plug.status}</td>
                       <td><RelativeTime isoString={plug.updated_at} /></td>
                       <td>{formatTimestamp(plug.updated_at)}</td>
                     </tr>
                   );
-                }),
-              )}
-            </tbody>
+                })}
+              </tbody>
+            ))}
           </table>
           {latestSnapshots.length === 0 && <p className="text-muted">Waiting on station data…</p>}
           <div className="refresh-status">
