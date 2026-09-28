@@ -40,7 +40,7 @@ function sortStations(snapshots: LatestSnapshot[], sort: string) {
 
 function formatChartLabel(data: AllTimeWeeklyHourlyAverage | ThisWeeklyHourlyAverage) {
   const day = DAY_NAMES[data.day_of_week_num];
-  return `${day} ${data.hour_label} PT - ${data.avg_available || 0} avg available`;
+  return `${day} ${data.hour_label} PT - ${data.avg_available.toFixed(2)} avg available`;
 }
 
 function formatHourLabel(hour: number) {
