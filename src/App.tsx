@@ -266,7 +266,7 @@ function App() {
               </tr>
             </thead>
             {latestSnapshots.map((station) => (
-              <tbody className="station-group" key={station.device_id} onClick={() => setSelectedStation(station)}>
+              <tbody className="station-group" key={station.device_id}>
                 {station.plugs.map((plug, index) => {
                   let statusClass = 'color-orange';
                   if (isPlugAvailable(plug)) statusClass = 'color-green';
@@ -278,7 +278,7 @@ function App() {
                         <td className={`station-name ${stationStatusClass(station)}`} rowSpan={station.plugs.length}>
                           <button type="button" className="station-history-trigger" aria-haspopup="dialog"
                             aria-label={`View recent updates for ${station.name}`}
-                            onClick={(event) => { event.stopPropagation(); setSelectedStation(station); }}>
+                            onClick={() => setSelectedStation(station)}>
                             {station.name}
                           </button>
                         </td>

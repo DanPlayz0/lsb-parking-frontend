@@ -63,7 +63,6 @@ body {
 
 .parking-map-station:hover { background: rgb(255 255 255 / 15%); }
 .parking-map-station:focus-visible { outline: 3px solid white; outline-offset: 2px; }
-.station-group { cursor: pointer; }
 .station-history-trigger {
   padding: 0.2rem;
   border: 0;
