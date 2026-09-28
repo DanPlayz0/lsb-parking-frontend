@@ -18,6 +18,7 @@ import { useAlignedInterval } from './utils/useAlignedInterval';
 import { useLiveSnapshots } from './utils/useLiveSnapshots';
 import RelativeTime from './components/relative-time';
 import { BarChart } from '@mui/x-charts';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const ALL_TIME_COLOR = 'oklch(0.72 0.15 250)';
@@ -74,51 +75,93 @@ function WeeklyHourlyChart({
   allTime: AllTimeWeeklyHourlyAverage[];
   thisWeek: ThisWeeklyHourlyAverage[];
 }) {
-  const maximum = Math.max(1, ...allTime.map((point) => point.avg_available), ...thisWeek.map((point) => point.avg_available));
+  const isSmallScreen = useMediaQuery('(width <= 425px)');
+  const [currentDay] = useState(() => {
+    const today = new Intl.DateTimeFormat('en-US', {
+      weekday: 'long',
+      timeZone: 'America/Los_Angeles',
+    }).format(new Date());
+    return String(DAY_NAMES.indexOf(today));
+  });
+  const [dayChoice, setDayChoice] = useState<string | null>(null);
+  const selectedDay = dayChoice ?? (isSmallScreen ? currentDay : 'all');
+  const showAll = selectedDay === 'all';
+  const hasRotatedHourLabels = isSmallScreen && !showAll;
+  // Rotated text needs its full line height in horizontal edge clearance.
+  // MUI otherwise removes the first label when the hourly bands get narrower.
+  const chartEdgePadding = hasRotatedHourLabels ? 16 : 0;
+  const visibleAllTime = allTime.filter((point) => showAll || point.day_of_week_num === Number(selectedDay));
+  const visibleThisWeek = thisWeek.filter((point) => showAll || point.day_of_week_num === Number(selectedDay));
+  const maximum = Math.max(1, ...visibleAllTime.map((point) => point.avg_available), ...visibleThisWeek.map((point) => point.avg_available));
   const visibleBarValue = (value: number) => value === 0 ? Number.EPSILON : value;
 
   return (
     <div className="weekly-chart">
+      <div className="selection-row">
+        <div>
+          <label htmlFor="chart-day">Day (Pacific time)</label>
+          <select id="chart-day" value={selectedDay} onChange={(event) => setDayChoice(event.target.value)}>
+            <option value="all">All</option>
+            {DAY_NAMES.map((day, index) => <option key={day} value={index}>{day}</option>)}
+          </select>
+        </div>
+      </div>
       <div className="chart-legend" aria-label="Chart legend">
-        <span><i style={{ backgroundColor: ALL_TIME_COLOR }} />All-time average</span>
-        <span><i style={{ backgroundColor: THIS_WEEK_COLOR }} />This week average</span>
+        <span><i style={{ backgroundColor: ALL_TIME_COLOR }} />Average Available Plugs (all time)</span>
+        <span><i style={{ backgroundColor: THIS_WEEK_COLOR }} />Average Available Plugs (this week)</span>
       </div>
       <BarChart
-        height={360}
+        height={hasRotatedHourLabels ? 420 : 360}
         hideLegend
         grid={{ horizontal: true }}
-        margin={{ top: 12, right: 16, bottom: 68, left: 42 }}
+        margin={{ top: 12, right: chartEdgePadding, bottom: 68, left: chartEdgePadding }}
         series={[
           {
-            label: 'Average Available Plugs (all time)',
-            data: allTime.map((point) => visibleBarValue(point.avg_available || Number.EPSILON)),
+            label: 'All time',
+            data: visibleAllTime.map((point) => visibleBarValue(point.avg_available || Number.EPSILON)),
             color: ALL_TIME_COLOR,
             minBarSize: 2,
-            valueFormatter: (_, context) => formatChartLabel(allTime[context.dataIndex]),
+            valueFormatter: (_, context) => formatChartLabel(visibleAllTime[context.dataIndex]),
           },
           {
-            label: 'Average Available Plugs (this week)',
-            data: thisWeek.map((point) => visibleBarValue(point.avg_available || Number.EPSILON)),
+            label: 'This week',
+            data: visibleThisWeek.map((point) => visibleBarValue(point.avg_available || Number.EPSILON)),
             color: THIS_WEEK_COLOR,
             minBarSize: 2,
-            valueFormatter: (_, context) => formatChartLabel(thisWeek[context.dataIndex]),
+            valueFormatter: (_, context) => formatChartLabel(visibleThisWeek[context.dataIndex]),
           },
         ]}
         xAxis={[{
           scaleType: 'band',
+          // MUI truncates rotated labels to the axis height, not the outer margin.
+          height: hasRotatedHourLabels ? 80 : undefined,
+          // Keep endpoint ticks inside the plot instead of on its clipping boundary.
+          tickPlacement: !showAll ? 'middle' : 'extremities',
           // Band-axis values must be unique. Reusing the same 24 hour labels for
           // every day collapses the domain and makes the chart stop at the last
           // hour that has data instead of reserving all 168 weekly slots.
-          data: allTime.map(weeklyHourKey),
-          valueFormatter: (value) => formatHourLabel(Number(value.split('-')[1])),
-          tickLabelInterval: (_value, index) => index % 6 === 0,
-          groups: [{
-            getValue: (_value, index) => DAY_NAMES[Math.floor(index / 24)],
+          data: visibleAllTime.map(weeklyHourKey),
+          valueFormatter: (value) => {
+            const hour = Number(value.split('-')[1]);
+            return !showAll
+              ? `${hour % 12 || 12}${hour < 12 ? 'am' : 'pm'}`
+              : formatHourLabel(hour);
+          },
+          tickLabelInterval: (_value, index) => !showAll || index % 6 === 0,
+          tickLabelStyle: hasRotatedHourLabels
+            ? { angle: -90, textAnchor: 'end', fontSize: 10, fill: '#fff' }
+            : { fill: '#fff' },
+          groups: !showAll ? undefined : [{
+            getValue: (_value, index) => DAY_NAMES[visibleAllTime[index].day_of_week_num],
             tickSize: 28,
             tickLabelStyle: { fill: '#fff', fontWeight: 600 },
           }],
         }]}
-        yAxis={[{ min: 0, max: maximum }]}
+        yAxis={[{
+          min: 0,
+          max: maximum,
+          position: 'none',
+        }]}
         sx={{
           backgroundColor: 'transparent',
           '& .MuiChartsAxis-tickLabel': { fill: '#fff' },
@@ -167,7 +210,7 @@ function App() {
         setThisWeeklyHourly(fillMissingWeeklyHours(thisWeek.status === 'fulfilled' ? thisWeek.value : []));
       })
       .catch((error) => console.error('Unable to refresh historical averages:', error));
-  }, 15, true, !paused);
+  }, 15 * 60, true, !paused);
 
   return (
     <>
@@ -244,7 +287,7 @@ function App() {
         <div>
           <h2 style={{ marginBottom: 0 }}>Snapshot Trends</h2>
           <p className="text-muted" style={{ marginTop: 0, fontSize: '0.8em' }}>
-            * Data points are taken every minute
+            * Data points are taken every minute; averages refresh every 15 minutes
           </p>
           <div className="chart-container">
             <WeeklyHourlyChart allTime={weeklyHourly} thisWeek={thisWeeklyHourly} />

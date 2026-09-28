@@ -37,11 +37,15 @@ body {
 }
 
 .parking-canvas {
+  max-width: 100%;
+  height: auto;
   background-image: url("https://discord.mx/5Xyq89e1xv.png");
   background-repeat: repeat;
 }
 
 .selection-row {
+  max-width: 100%;
+  flex-wrap: wrap;
   width: fit-content;
   display: flex;
   flex-direction: row;
@@ -137,6 +141,26 @@ table {
 
 .weekly-chart {
   width: 100%;
+  min-width: 0;
+}
+
+@media screen and (max-width: 600px) {
+  #snapshot-container table {
+    width: 100%;
+    table-layout: fixed;
+    font-size: 0.75rem;
+  }
+
+  #snapshot-container th, #snapshot-container td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  #snapshot-container th:nth-child(1) { width: 18%; }
+  #snapshot-container th:nth-child(2) { width: 10%; }
+  #snapshot-container th:nth-child(3) { width: 24%; }
+  #snapshot-container th:nth-child(4) { width: 18%; }
+  #snapshot-container th:nth-child(5) { width: 30%; }
 }
 
 .chart-legend {
