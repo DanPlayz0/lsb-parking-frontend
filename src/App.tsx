@@ -6,6 +6,7 @@ import {
   fetchWeeklyHourlyAverages,
   isPlugAvailable,
   isPlugInUse,
+  isPlugUnknown,
   latestStationUpdate,
   parseApiTimestamp,
   usedPlugCount,
@@ -186,6 +187,7 @@ function formatTimestamp(timestamp: string) {
 }
 
 function stationStatusClass(station: LatestSnapshot) {
+  if (station.plugs.length === 0 || station.plugs.some(isPlugUnknown)) return 'color-gray';
   if (station.plugs.length > 0 && station.plugs.every(isPlugAvailable)) return 'color-green';
   if (station.plugs.length > 0 && station.plugs.every(isPlugInUse)) return 'color-red';
   return 'color-orange';
@@ -248,7 +250,8 @@ function App() {
           <div className="mobile-status-key" aria-label="Status key">
             <span>Green = Available</span>
             <span>Red = In use</span>
-            <span>Orange = Other</span>
+            <span>Orange = Mixed availability</span>
+            <span>Gray = Unknown</span>
           </div>
           <table>
             <thead>
@@ -263,7 +266,10 @@ function App() {
             {latestSnapshots.map((station) => (
               <tbody className="station-group" key={station.device_id}>
                 {station.plugs.map((plug, index) => {
-                  const statusClass = isPlugAvailable(plug) ? 'color-green' : isPlugInUse(plug) ? 'color-red' : 'color-orange';
+                  let statusClass = 'color-orange';
+                  if (isPlugAvailable(plug)) statusClass = 'color-green';
+                  else if (isPlugInUse(plug)) statusClass = 'color-red';
+                  else if (isPlugUnknown(plug)) statusClass = 'color-gray';
                   return (
                     <tr key={`${station.device_id}-${plug.outlet_number}`} className={statusClass}>
                       {index === 0 && (

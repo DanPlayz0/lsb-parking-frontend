@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { availablePlugCount, type LatestSnapshot } from '../api';
+import { availablePlugCount, isPlugUnknown, type LatestSnapshot } from '../api';
 
 const RED = 'oklch(0.8 0.2 30)';
 const ORANGE = 'oklch(0.8 0.2 80)';
 const GREEN = 'oklch(0.8 0.2 150)';
 const BLUE = 'oklch(0.8 0.2 250)';
+const GRAY = 'oklch(0.7 0 0)';
 
 export default function ParkingCanvas({ latestSnapshots, refreshedAt }: { latestSnapshots: LatestSnapshot[]; refreshedAt: Date | null }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -34,8 +35,12 @@ export default function ParkingCanvas({ latestSnapshots, refreshedAt }: { latest
         .map((x) => Number(x))
         .slice(0, 2);
       if (isNaN(x) || isNaN(y)) continue;
-      const availabilityColor =
-        y == 1 && x == 4 ? (available > 0 ? BLUE : RED) : available == 0 ? RED : available > 1 ? GREEN : ORANGE;
+      let availabilityColor = ORANGE;
+      if (snapshot.plugs.length === 0 || snapshot.plugs.some(isPlugUnknown)) availabilityColor = GRAY;
+      else if (y === 1 && x === 4) availabilityColor = available > 0 ? BLUE : RED; // Handicapped parking
+      else if (available === 0) availabilityColor = RED;
+      else if (available > 1) availabilityColor = GREEN;
+
       ctx.fillStyle = availabilityColor;
 
       const posX = 75;

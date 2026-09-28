@@ -72,6 +72,7 @@ const normalizedStatus = (status: string) => status.toLowerCase().replaceAll('_'
 
 export const isPlugAvailable = (plug: PlugSnapshot) => normalizedStatus(plug.status) === 'available';
 export const isPlugInUse = (plug: PlugSnapshot) => normalizedStatus(plug.status) === 'inuse';
+export const isPlugUnknown = (plug: PlugSnapshot) => normalizedStatus(plug.status) === 'unknown';
 export const availablePlugCount = (station: LatestSnapshot) => station.plugs.filter(isPlugAvailable).length;
 export const usedPlugCount = (station: LatestSnapshot) => station.plugs.filter(isPlugInUse).length;
 

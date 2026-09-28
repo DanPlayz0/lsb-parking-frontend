@@ -48,6 +48,7 @@
   /* Colors used for table & "background-image" canvas */
   --red: oklch(0.8 0.2 30);
   --orange: oklch(0.8 0.2 80);
+  --gray: oklch(0.7 0 0);
   --green: oklch(0.8 0.2 150);
   --blue: oklch(0.8 0.2 250);
 }

@@ -214,6 +214,17 @@ table {
   transition: color 1.5s, background-color 0.8s;
 }
 
+.color-gray {
+  color: var(--gray);
+  transition: color 1.5s, background-color 0.8s;
+}
+
+.color-gray:hover,
+.station-group:has(tr:hover) .station-name.color-gray {
+  color: black;
+  background-color: var(--gray);
+}
+
 .station-name {
   background-color: transparent;
   transition: color 1.5s, background-color 0.8s;
