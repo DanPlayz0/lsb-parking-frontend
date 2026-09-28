@@ -36,40 +36,36 @@ export function useLiveSnapshots() {
     const startHiddenTimer = () => {
       if (hiddenTimer !== null) return;
       hiddenTimer = window.setTimeout(() => {
+        hiddenTimer = null;
         if (document.visibilityState === 'hidden') setPaused(true);
       }, HIDDEN_TIMEOUT_MS);
     };
-    const onBlur = () => { needsRefresh = true; };
-    const onFocus = () => {
-      if (!needsRefresh || document.visibilityState === 'hidden') return;
-      needsRefresh = false;
+    const onVisible = () => {
+      if (document.visibilityState === 'hidden') return;
       clearHiddenTimer();
+      if (!needsRefresh) return;
+      needsRefresh = false;
       setPaused(false);
       forceRefresh();
     };
     const onVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        onBlur();
+        needsRefresh = true;
         startHiddenTimer();
       }
-      else onFocus();
+      else onVisible();
     };
     const onPageShow = (event: PageTransitionEvent) => {
-      if (event.persisted) {
-        needsRefresh = true;
-        onFocus();
-      }
+      if (!event.persisted) return;
+      needsRefresh = true;
+      onVisible();
     };
 
-    window.addEventListener('blur', onBlur);
-    window.addEventListener('focus', onFocus);
     window.addEventListener('pageshow', onPageShow);
     document.addEventListener('visibilitychange', onVisibilityChange);
     if (document.visibilityState === 'hidden') startHiddenTimer();
     return () => {
       clearHiddenTimer();
-      window.removeEventListener('blur', onBlur);
-      window.removeEventListener('focus', onFocus);
       window.removeEventListener('pageshow', onPageShow);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
