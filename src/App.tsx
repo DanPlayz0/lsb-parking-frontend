@@ -51,6 +51,12 @@ function formatTimestamp(timestamp: string) {
   });
 }
 
+function stationStatusClass(station: LatestSnapshot) {
+  if (station.plugs.length > 0 && station.plugs.every(isPlugAvailable)) return 'color-green';
+  if (station.plugs.length > 0 && station.plugs.every(isPlugInUse)) return 'color-red';
+  return 'color-orange';
+}
+
 function App() {
   const { snapshots: rawLatestSnapshots, refreshedAt, status } = useLiveSnapshots();
   const [weeklyHourly, setWeeklyHourly] = useState<AllTimeWeeklyHourlyAverage[]>([]);
@@ -121,7 +127,11 @@ function App() {
                   const statusClass = isPlugAvailable(plug) ? 'color-green' : isPlugInUse(plug) ? 'color-red' : 'color-orange';
                   return (
                     <tr key={`${station.device_id}-${plug.outlet_number}`} className={statusClass}>
-                      {index === 0 && <td className="station-name" rowSpan={station.plugs.length}>{station.name}</td>}
+                      {index === 0 && (
+                        <td className={`station-name ${stationStatusClass(station)}`} rowSpan={station.plugs.length}>
+                          {station.name}
+                        </td>
+                      )}
                       <td>{plug.outlet_number}</td>
                       <td>{plug.status}</td>
                       <td><RelativeTime isoString={plug.updated_at} /></td>

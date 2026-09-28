@@ -148,6 +148,11 @@ table {
   transition: color 1.5s, background-color 0.8s;
 }
 
+.station-name {
+  background-color: transparent;
+  transition: color 1.5s, background-color 0.8s;
+}
+
 .color-green:hover {
   color: black;
   background-color: var(--green);
@@ -161,17 +166,17 @@ table {
   background-color: var(--orange);
 }
 
-.station-group:has(.color-green:hover) .station-name {
+.station-group:has(tr:hover) .station-name.color-green {
   color: black;
   background-color: var(--green);
 }
 
-.station-group:has(.color-red:hover) .station-name {
+.station-group:has(tr:hover) .station-name.color-red {
   color: black;
   background-color: var(--red);
 }
 
-.station-group:has(.color-orange:hover) .station-name {
+.station-group:has(tr:hover) .station-name.color-orange {
   color: black;
   background-color: var(--orange);
 }
