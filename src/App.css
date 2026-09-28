@@ -1,0 +1,129 @@
+html {
+  font-size: 16px;
+  background: var(--background);
+  background: linear-gradient(90deg, var(--background) 0%, oklch(0.1834 0.07 276.41) 50%, var(--background) 100%);
+}
+body {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+#root {
+  color: var(--foreground);
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  /* padding: 2rem; */
+}
+
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+  width: fit-content;
+}
+
+.title {
+  font-size: 3.2rem;
+}
+@media screen and (max-width: 425px) {
+  .title {
+    font-size: 2.4rem;
+  }
+}
+
+.parking-canvas {
+  background-image: url("https://discord.mx/5Xyq89e1xv.png");
+  background-repeat: repeat;
+}
+
+.selection-row {
+  width: fit-content;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.selection-row > div {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+#snapshot-container {
+  margin: auto;
+  padding: 0.2rem;
+  border-radius: 12px;
+  border: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 425px;
+}
+
+#snapshot-container th, #snapshot-container td {
+  padding: 0.2rem;
+}
+@media screen and (min-width: 475px) {
+  #snapshot-container {
+    padding: 1rem;
+  }
+}
+
+select {
+  padding: 4px;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+select:focus {
+  border-color: #333;
+}
+
+table {
+  transition: all 0.3s ease-in-out;
+}
+
+.chart-container {
+  background-color: var(--secondary);
+  display: grid;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.color-green {
+  color: var(--green);
+  transition: color 1.5s, background-color 0.8s;
+}
+.color-red {
+  color: var(--red);
+  transition: color 1.5s, background-color 0.8s;
+}
+.color-orange {
+  color: var(--orange);
+  transition: color 1.5s, background-color 0.8s;
+}
+
+.color-green:hover {
+  color: black;
+  background-color: var(--green);
+}
+.color-red:hover {
+  color: black;
+  background-color: var(--red);
+}
+.color-orange:hover {
+  color: black;
+  background-color: var(--orange);
+}
