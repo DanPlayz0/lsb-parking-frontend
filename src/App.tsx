@@ -58,7 +58,7 @@ function stationStatusClass(station: LatestSnapshot) {
 }
 
 function App() {
-  const { snapshots: rawLatestSnapshots, refreshedAt, status } = useLiveSnapshots();
+  const { snapshots: rawLatestSnapshots, refreshedAt, status, forceRefresh } = useLiveSnapshots();
   const [weeklyHourly, setWeeklyHourly] = useState<AllTimeWeeklyHourlyAverage[]>([]);
   const [thisWeeklyHourly, setThisWeeklyHourly] = useState<ThisWeeklyHourlyAverage[]>([]);
   const [parkingFaculty, setParkingFaculty] = useState(false);
@@ -144,6 +144,7 @@ function App() {
           </table>
           {latestSnapshots.length === 0 && <p className="text-muted">Waiting on station data…</p>}
           <div className="refresh-status">
+            <button type="button" onClick={forceRefresh}>Force refresh</button>
             <span className={`connection-status ${status}`}>{status === 'live' ? 'Live' : status === 'polling' ? 'Polling' : 'Connecting'}</span>
             {refreshedAt && <span className="text-muted">Updated {refreshedAt.toLocaleTimeString()}</span>}
           </div>

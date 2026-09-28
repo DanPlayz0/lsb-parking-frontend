@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   createSnapshotSocket,
   fetchLatestSnapshots,
@@ -21,6 +21,39 @@ export function useLiveSnapshots() {
   const [snapshots, setSnapshots] = useState<LatestSnapshot[]>([]);
   const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
   const [status, setStatus] = useState<RealtimeStatus>('connecting');
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const forceRefresh = useCallback(() => setRefreshVersion((version) => version + 1), []);
+
+  useEffect(() => {
+    let needsRefresh = document.visibilityState === 'hidden';
+    const onBlur = () => { needsRefresh = true; };
+    const onFocus = () => {
+      if (!needsRefresh || document.visibilityState === 'hidden') return;
+      needsRefresh = false;
+      forceRefresh();
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') onBlur();
+      else onFocus();
+    };
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        needsRefresh = true;
+        onFocus();
+      }
+    };
+
+    window.addEventListener('blur', onBlur);
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('pageshow', onPageShow);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.removeEventListener('blur', onBlur);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('pageshow', onPageShow);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [forceRefresh]);
 
   useEffect(() => {
     let disposed = false;
@@ -83,6 +116,14 @@ export function useLiveSnapshots() {
           if (message.type === 'snapshot') {
             applySnapshot(message.data);
           } else {
+            if (import.meta.env.VITE_LOGGING_DEBUG === 'true') {
+              console.debug('station_received', {
+                fetchedAt: message.fetchedAt,
+                publishedAt: message.publishedAt,
+                broadcastAt: message.broadcastAt,
+                receivedAt: new Date().toISOString(),
+              });
+            }
             setSnapshots((current) => mergeStations(current, message.data));
             setRefreshedAt(new Date());
           }
@@ -109,11 +150,14 @@ export function useLiveSnapshots() {
       stopPolling();
       if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
       if (socket) {
+        socket.onopen = null;
+        socket.onmessage = null;
+        socket.onerror = null;
         socket.onclose = null;
         socket.close();
       }
     };
-  }, []);
+  }, [refreshVersion]);
 
-  return { snapshots, refreshedAt, status };
+  return { snapshots, refreshedAt, status, forceRefresh };
 }

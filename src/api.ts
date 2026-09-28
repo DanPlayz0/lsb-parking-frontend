@@ -42,6 +42,9 @@ export interface SnapshotMessage {
 export interface StationUpdateMessage {
   type: 'station_update';
   timestamp: string;
+  fetchedAt?: string;
+  publishedAt?: string;
+  broadcastAt?: string;
   data: LatestSnapshot[];
 }
 
