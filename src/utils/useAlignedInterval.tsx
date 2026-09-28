@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
 
-export function useAlignedInterval(task: () => void, intervalSeconds: number, instantRun: boolean = true) {
+export function useAlignedInterval(task: () => void, intervalSeconds: number, instantRun: boolean = true, enabled: boolean = true) {
   const taskRef = useRef(task);
   taskRef.current = task;
 
   useEffect(() => {
+    if (!enabled) return;
     // Run immediately on mount
     if (instantRun) taskRef.current();
 
@@ -26,5 +27,5 @@ export function useAlignedInterval(task: () => void, intervalSeconds: number, in
       clearTimeout(timeoutId);
       if (intervalId) clearInterval(intervalId);
     };
-  }, [intervalSeconds, instantRun]);
+  }, [intervalSeconds, instantRun, enabled]);
 }

@@ -2,8 +2,8 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://lsb-api.comp
 
 type EndpointString = `/${string}`;
 
-async function fetchUpstream<T>(endpoint: EndpointString): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, { cache: 'no-cache' });
+async function fetchUpstream<T>(endpoint: EndpointString, signal?: AbortSignal): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, { cache: 'no-cache', signal });
   if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
   return response.json() as Promise<T>;
 }
@@ -50,8 +50,8 @@ export interface StationUpdateMessage {
 
 export type RealtimeMessage = SnapshotMessage | StationUpdateMessage;
 
-export function fetchLatestSnapshots({ include_faculty_parking = true } = {}) {
-  return fetchUpstream<LatestSnapshot[]>(`/snapshots?include_faculty_parking=${include_faculty_parking}`);
+export function fetchLatestSnapshots({ include_faculty_parking = true, signal }: { include_faculty_parking?: boolean; signal?: AbortSignal } = {}) {
+  return fetchUpstream<LatestSnapshot[]>(`/snapshots?include_faculty_parking=${include_faculty_parking}`, signal);
 }
 
 export function createSnapshotSocket({ include_faculty_parking = true } = {}) {

@@ -10,6 +10,7 @@ export type RealtimeStatus = 'connecting' | 'live' | 'polling';
 
 const POLL_INTERVAL_MS = 15_000;
 const MAX_RECONNECT_DELAY_MS = 30_000;
+const HIDDEN_TIMEOUT_MS = 2 * 60_000;
 
 function mergeStations(current: LatestSnapshot[], updates: LatestSnapshot[]) {
   const merged = new Map(current.map((station) => [station.device_id, station]));
@@ -22,18 +23,35 @@ export function useLiveSnapshots() {
   const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
   const [status, setStatus] = useState<RealtimeStatus>('connecting');
   const [refreshVersion, setRefreshVersion] = useState(0);
+  const [paused, setPaused] = useState(false);
   const forceRefresh = useCallback(() => setRefreshVersion((version) => version + 1), []);
 
   useEffect(() => {
     let needsRefresh = document.visibilityState === 'hidden';
+    let hiddenTimer: number | null = null;
+    const clearHiddenTimer = () => {
+      if (hiddenTimer !== null) window.clearTimeout(hiddenTimer);
+      hiddenTimer = null;
+    };
+    const startHiddenTimer = () => {
+      if (hiddenTimer !== null) return;
+      hiddenTimer = window.setTimeout(() => {
+        if (document.visibilityState === 'hidden') setPaused(true);
+      }, HIDDEN_TIMEOUT_MS);
+    };
     const onBlur = () => { needsRefresh = true; };
     const onFocus = () => {
       if (!needsRefresh || document.visibilityState === 'hidden') return;
       needsRefresh = false;
+      clearHiddenTimer();
+      setPaused(false);
       forceRefresh();
     };
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') onBlur();
+      if (document.visibilityState === 'hidden') {
+        onBlur();
+        startHiddenTimer();
+      }
       else onFocus();
     };
     const onPageShow = (event: PageTransitionEvent) => {
@@ -47,7 +65,9 @@ export function useLiveSnapshots() {
     window.addEventListener('focus', onFocus);
     window.addEventListener('pageshow', onPageShow);
     document.addEventListener('visibilitychange', onVisibilityChange);
+    if (document.visibilityState === 'hidden') startHiddenTimer();
     return () => {
+      clearHiddenTimer();
       window.removeEventListener('blur', onBlur);
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('pageshow', onPageShow);
@@ -56,7 +76,9 @@ export function useLiveSnapshots() {
   }, [forceRefresh]);
 
   useEffect(() => {
+    if (paused) return;
     let disposed = false;
+    const controller = new AbortController();
     let socket: WebSocket | null = null;
     let pollTimer: number | null = null;
     let reconnectTimer: number | null = null;
@@ -70,8 +92,9 @@ export function useLiveSnapshots() {
 
     const poll = async () => {
       try {
-        applySnapshot(await fetchLatestSnapshots());
+        applySnapshot(await fetchLatestSnapshots({ signal: controller.signal }));
       } catch (error) {
+        if (disposed) return;
         console.error('Unable to poll station snapshots:', error);
       }
     };
@@ -147,6 +170,7 @@ export function useLiveSnapshots() {
 
     return () => {
       disposed = true;
+      controller.abort();
       stopPolling();
       if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
       if (socket) {
@@ -157,7 +181,7 @@ export function useLiveSnapshots() {
         socket.close();
       }
     };
-  }, [refreshVersion]);
+  }, [refreshVersion, paused]);
 
-  return { snapshots, refreshedAt, status, forceRefresh };
+  return { snapshots, refreshedAt, status: paused ? 'paused' as const : status, forceRefresh, paused };
 }
