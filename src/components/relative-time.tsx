@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { parseApiTimestamp } from '../api';
+import { formatDuration } from '../utils/historyDuration';
 
 export default function AgeText({ isoString, compact = false }: { isoString: string | Date; compact?: boolean }) {
   const [ageText, setAgeText] = useState('');
@@ -15,10 +16,7 @@ export default function AgeText({ isoString, compact = false }: { isoString: str
       const elapsedSeconds = Math.max(0, diffSeconds);
 
       if (compact) {
-        const hours = Math.floor(elapsedSeconds / 3600);
-        const minutes = Math.floor((elapsedSeconds / 60) % 60);
-        if (hours === 0) return `${minutes}m`;
-        return `${hours}h${minutes > 0 ? `${minutes}m` : ''}`;
+        return formatDuration(elapsedSeconds * 1000);
       }
 
       if (elapsedSeconds < 3600) {
