@@ -1,5 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import { useEffect, useState } from 'react';
+import RelativeTime from './relative-time';
 import { fetchStationHistory, parseApiTimestamp, type LatestSnapshot, type PlugSnapshot } from '../api';
 
 export default function StationHistoryDialog({ station, refreshedAt, onClose }: {
@@ -39,7 +40,7 @@ export default function StationHistoryDialog({ station, refreshedAt, onClose }: 
           <ol className="station-history-list">
             {updates.map((update) => (
               <li key={`${update.outlet_number}-${update.updated_at}-${update.status}`}>
-                <strong>Plug {update.outlet_number}: {update.status}</strong>
+                <strong>Plug {update.outlet_number}: {update.status} (<RelativeTime isoString={update.updated_at} compact />)</strong>
                 <time dateTime={parseApiTimestamp(update.updated_at).toISOString()}>
                   {parseApiTimestamp(update.updated_at).toLocaleString(undefined, { timeZoneName: 'short' })}
                 </time>

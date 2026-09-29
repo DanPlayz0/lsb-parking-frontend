@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { parseApiTimestamp } from '../api';
 
-export default function AgeText({ isoString }: { isoString: string | Date }) {
+export default function AgeText({ isoString, compact = false }: { isoString: string | Date; compact?: boolean }) {
   const [ageText, setAgeText] = useState('');
 
   useEffect(() => {
@@ -13,6 +13,13 @@ export default function AgeText({ isoString }: { isoString: string | Date }) {
       if (Number.isNaN(then)) return 'Unknown';
       const diffSeconds = Math.floor((now - then) / 1000);
       const elapsedSeconds = Math.max(0, diffSeconds);
+
+      if (compact) {
+        const hours = Math.floor(elapsedSeconds / 3600);
+        const minutes = Math.floor((elapsedSeconds / 60) % 60);
+        if (hours === 0) return `${minutes}m`;
+        return `${hours}h${minutes > 0 ? `${minutes}m` : ''}`;
+      }
 
       if (elapsedSeconds < 3600) {
         return `${Math.floor(elapsedSeconds / 60)} min ago`;
@@ -39,7 +46,7 @@ export default function AgeText({ isoString }: { isoString: string | Date }) {
       clearTimeout(timeout);
       if (interval !== null) clearInterval(interval);
     };
-  }, [isoString]);
+  }, [isoString, compact]);
 
-  return <span>{ageText}</span>;
+  return <span title={compact ? 'Time since this change' : undefined}>{ageText}</span>;
 }
