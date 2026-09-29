@@ -74,9 +74,22 @@ body {
   cursor: pointer;
 }
 .station-history-trigger:focus-visible { outline: 2px solid currentColor; }
-.station-history-list { padding-left: 1.5rem; }
-.station-history-list li { padding: 0.8rem 0; border-bottom: 1px solid #393d52; }
-.station-history-list time { display: block; margin-top: 0.35rem; color: #c3c6d4; font-size: 0.875rem; }
+.station-history-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  text-align: left;
+}
+.station-history-table th, .station-history-table td {
+  padding: 0.8rem clamp(0.35rem, 2vw, 1rem);
+  border: 1px solid #393d52;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.station-history-table th { text-align: center; }
+.station-history-table th:first-child { width: 1.25rem; padding-inline: 0.25rem; }
+.station-history-table time { display: block; margin-top: 0.35rem; color: #c3c6d4; font-size: 0.875rem; }
 
 .selection-row {
   max-width: 100%;

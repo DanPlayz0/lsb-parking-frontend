@@ -28,6 +28,12 @@ export default function StationHistoryDialog({ station, refreshedAt, onClose }: 
     ...station.plugs.map((plug) => plug.outlet_number),
     ...(updates ?? []).map((update) => update.outlet_number),
   ])].sort((a, b) => a - b);
+  const plugHistories = plugNumbers.map((plugNumber) => ({
+    plugNumber,
+    changes: (updates ?? []).filter((update) => update.outlet_number === plugNumber)
+      .sort((a, b) => parseApiTimestamp(b.updated_at).getTime() - parseApiTimestamp(a.updated_at).getTime())
+      .slice(0, 5),
+  }));
 
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="md"
@@ -44,17 +50,21 @@ export default function StationHistoryDialog({ station, refreshedAt, onClose }: 
           <Button onClick={() => setRetry((value) => value + 1)}>Retry</Button></div>
           : updates === null ? <p role="status">Loading station history…</p>
           : updates.length === 0 ? <p>No recorded changes for this station.</p> : (
-          <div className="station-history-columns">
-          {plugNumbers.map((plugNumber) => {
-            const changes = updates.filter((update) => update.outlet_number === plugNumber)
-              .sort((a, b) => parseApiTimestamp(b.updated_at).getTime() - parseApiTimestamp(a.updated_at).getTime())
-              .slice(0, 5);
-            return <section key={plugNumber} aria-labelledby={`history-plug-${plugNumber}`}>
-              <h3 id={`history-plug-${plugNumber}`}>Plug {plugNumber}</h3>
-              {changes.length === 0 ? <p>No recorded changes for this plug.</p> : (
-                <ol className="station-history-list">
-                  {changes.map((update, index) => (
-                    <li key={`${update.updated_at}-${update.status}`}>
+          <table className="station-history-table" aria-label="Last five changes per plug, newest first">
+            <thead>
+              <tr>
+                <th scope="col" aria-label="Change number" />
+                {plugHistories.map(({ plugNumber }) => <th scope="col" key={plugNumber} aria-label={`Plug ${plugNumber}`}>{plugNumber}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 5 }, (_, index) => (
+                <tr key={index}>
+                  <th scope="row">{index + 1}</th>
+                  {plugHistories.map(({ plugNumber, changes }) => {
+                    const update = changes[index];
+                    return <td key={plugNumber}>
+                      {update ? <>
                       <strong>{update.status} ({index === 0
                         ? <><RelativeTime isoString={update.updated_at} compact /> so far</>
                         : formatDuration(parseApiTimestamp(changes[index - 1].updated_at).getTime()
@@ -62,13 +72,13 @@ export default function StationHistoryDialog({ station, refreshedAt, onClose }: 
                       <time dateTime={parseApiTimestamp(update.updated_at).toISOString()}>
                         {parseApiTimestamp(update.updated_at).toLocaleString(undefined, { timeZoneName: 'short' })}
                       </time>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </section>;
-          })}
-          </div>
+                      </> : <span aria-label="No recorded change">—</span>}
+                    </td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </DialogContent>
       <DialogActions><Button onClick={onClose} sx={{ color: '#b8d9ff' }}>Close</Button></DialogActions>
