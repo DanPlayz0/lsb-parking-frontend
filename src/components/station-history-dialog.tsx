@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, SwipeableDrawer, useMediaQuery } from '@mui/material';
 import { useEffect, useState } from 'react';
 import RelativeTime from './relative-time';
 import { formatDuration } from '../utils/historyDuration';
@@ -9,6 +9,7 @@ export default function StationHistoryDialog({ station, refreshedAt, onClose }: 
   refreshedAt: Date | null;
   onClose: () => void;
 }) {
+  const isMobile = useMediaQuery('(max-width: 600px)');
   const [updates, setUpdates] = useState<PlugSnapshot[] | null>(null);
   const [error, setError] = useState(false);
   const [retry, setRetry] = useState(0);
@@ -35,13 +36,16 @@ export default function StationHistoryDialog({ station, refreshedAt, onClose }: 
       .slice(0, 5),
   }));
 
-  return (
-    <Dialog open onClose={onClose} fullWidth maxWidth="md"
-      aria-labelledby="station-history-title" aria-describedby="station-history-description"
-      slotProps={{ paper: { sx: { bgcolor: '#181b30', color: '#fff', borderRadius: 3 } } }}>
-      <DialogTitle id="station-history-title">{station?.name} — Recent updates</DialogTitle>
-      <DialogContent>
-        <DialogContentText id="station-history-description" sx={{ color: '#c3c6d4' }}>
+  const content = (
+    <>
+      {isMobile && <Box aria-hidden="true" sx={{ pt: 1.5, pb: 1, flexShrink: 0 }}>
+        <Box sx={{ width: 36, height: 5, borderRadius: 3, bgcolor: 'rgba(255, 255, 255, 0.35)', mx: 'auto' }} />
+      </Box>}
+      <DialogTitle id="station-history-title" sx={isMobile ? { px: 1, pt: 1.5, pb: 1 } : undefined}>
+        {station?.name} — Recent updates
+      </DialogTitle>
+      <DialogContent sx={isMobile ? { p: 0 } : undefined}>
+        <DialogContentText id="station-history-description" sx={{ color: '#c3c6d4', ...(isMobile && { px: 2, py: 1 }) }}>
           The last five changes for each plug, newest first. Durations show how long each status
           lasted; “so far” marks the latest status. Times are based on recorded samples and shown
           in your local time zone.
@@ -81,7 +85,36 @@ export default function StationHistoryDialog({ station, refreshedAt, onClose }: 
           </table>
         )}
       </DialogContent>
-      <DialogActions><Button onClick={onClose} sx={{ color: '#b8d9ff' }}>Close</Button></DialogActions>
+      <DialogActions sx={isMobile ? { p: 0 } : undefined}>
+        <Button onClick={onClose} sx={{ color: '#b8d9ff', minHeight: 44 }}>Close</Button>
+      </DialogActions>
+    </>
+  );
+
+  return isMobile ? (
+    <SwipeableDrawer anchor="bottom" open onClose={onClose} onOpen={() => {}}
+      disableSwipeToOpen
+      slotProps={{ paper: {
+        role: 'dialog', 'aria-modal': true,
+        'aria-labelledby': 'station-history-title',
+        'aria-describedby': 'station-history-description',
+        sx: {
+          bgcolor: '#181b30', color: '#fff', borderRadius: '20px 20px 0 0',
+          maxHeight: 'min(90dvh, calc(100dvh - env(safe-area-inset-top) - 16px))',
+          overflow: 'hidden',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          paddingLeft: 'env(safe-area-inset-left)',
+          paddingRight: 'env(safe-area-inset-right)',
+          boxSizing: 'border-box',
+        },
+      } }}>
+      {content}
+    </SwipeableDrawer>
+  ) : (
+    <Dialog open onClose={onClose} fullWidth maxWidth="md"
+      aria-labelledby="station-history-title" aria-describedby="station-history-description"
+      slotProps={{ paper: { sx: { bgcolor: '#181b30', color: '#fff', borderRadius: 3 } } }}>
+      {content}
     </Dialog>
   );
 }
