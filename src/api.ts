@@ -94,12 +94,12 @@ export interface AllTimeWeeklyHourlyAverage {
   avg_available: number;
 }
 
-export function fetchWeeklyHourlyAverages() {
-  return fetchUpstream<AllTimeWeeklyHourlyAverage[]>('/weekly-hourly/alltime');
+export function fetchWeeklyHourlyAverages({ include_faculty_parking = false, signal }: { include_faculty_parking?: boolean; signal?: AbortSignal } = {}) {
+  return fetchUpstream<AllTimeWeeklyHourlyAverage[]>(`/weekly-hourly/alltime?include_faculty_parking=${include_faculty_parking}`, signal);
 }
 
 export type ThisWeeklyHourlyAverage = AllTimeWeeklyHourlyAverage;
 
-export function fetchThisWeeklyHourlyAverages() {
-  return fetchUpstream<ThisWeeklyHourlyAverage[]>('/weekly-hourly/thisweek');
+export function fetchThisWeeklyHourlyAverages({ include_faculty_parking = false, signal }: { include_faculty_parking?: boolean; signal?: AbortSignal } = {}) {
+  return fetchUpstream<ThisWeeklyHourlyAverage[]>(`/weekly-hourly/thisweek?include_faculty_parking=${include_faculty_parking}`, signal);
 }

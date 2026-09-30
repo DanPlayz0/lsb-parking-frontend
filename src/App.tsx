@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './App.css';
 import {
   availablePlugCount,
@@ -207,14 +207,21 @@ function App() {
     return sortStations([...visible], sortBy);
   }, [rawLatestSnapshots, sortBy, parkingFaculty]);
 
-  useAlignedInterval(() => {
-    void Promise.allSettled([fetchWeeklyHourlyAverages(), fetchThisWeeklyHourlyAverages()])
+  const [trendsRefresh, setTrendsRefresh] = useState(0);
+  useAlignedInterval(() => setTrendsRefresh((value) => value + 1), 15 * 60, false, !paused);
+
+  useEffect(() => {
+    if (paused) return;
+    const controller = new AbortController();
+    const options = { include_faculty_parking: parkingFaculty, signal: controller.signal };
+    void Promise.allSettled([fetchWeeklyHourlyAverages(options), fetchThisWeeklyHourlyAverages(options)])
       .then(([allTime, thisWeek]) => {
+        if (controller.signal.aborted) return;
         setWeeklyHourly(fillMissingWeeklyHours(allTime.status === 'fulfilled' ? allTime.value : []));
         setThisWeeklyHourly(fillMissingWeeklyHours(thisWeek.status === 'fulfilled' ? thisWeek.value : []));
-      })
-      .catch((error) => console.error('Unable to refresh historical averages:', error));
-  }, 15 * 60, true, !paused);
+      });
+    return () => controller.abort();
+  }, [parkingFaculty, trendsRefresh, paused]);
 
   return (
     <>
