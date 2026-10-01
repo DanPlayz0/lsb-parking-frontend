@@ -192,6 +192,30 @@ table {
   min-width: 0;
 }
 
+.enforced-hours-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.enforced-hours-toggle input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #a78bfa;
+  flex-shrink: 0;
+}
+
+.enforced-hours-toggle small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--foreground);
+  opacity: 0.65;
+  font-size: 0.8em;
+}
+
 .mobile-status-key {
   display: none;
 }

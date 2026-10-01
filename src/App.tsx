@@ -19,12 +19,34 @@ import StationHistoryDialog from './components/station-history-dialog';
 import { useAlignedInterval } from './utils/useAlignedInterval';
 import { useLiveSnapshots } from './utils/useLiveSnapshots';
 import RelativeTime from './components/relative-time';
-import { BarChart } from '@mui/x-charts';
+import { BarPlot, ChartContainer, ChartsAxis, ChartsAxisHighlight, ChartsGrid, ChartsTooltip } from '@mui/x-charts';
+import { useDrawingArea, useXScale } from '@mui/x-charts/hooks';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const ALL_TIME_COLOR = 'oklch(0.72 0.15 250)';
 const THIS_WEEK_COLOR = 'oklch(0.82 0.16 80)';
+const ENFORCED_HOURS_COLOR = 'rgba(167, 139, 250, 0.18)';
+
+function EnforcedHoursBackground({ days }: { days: number[] }) {
+  const scale = useXScale<'band'>();
+  const { top, height } = useDrawingArea();
+
+  return (
+    <g aria-hidden="true" pointerEvents="none">
+      {days.filter((day) => day >= 1 && day <= 5).map((day) => {
+        // Hour buckets are already in America/Los_Angeles, including DST.
+        // Extend to the bucket edges so 8am is included and 8pm is excluded.
+        const start = scale(`${day}-8`);
+        const end = scale(`${day}-20`);
+        if (start === undefined || end === undefined) return null;
+        const gap = (scale.step() - scale.bandwidth()) / 2;
+        return <rect key={day} x={start - gap} y={top} width={end - start}
+          height={height} fill={ENFORCED_HOURS_COLOR} />;
+      })}
+    </g>
+  );
+}
 
 function sortStations(snapshots: LatestSnapshot[], sort: string) {
   if (sort === 'name') {
@@ -86,6 +108,7 @@ function WeeklyHourlyChart({
     return String(DAY_NAMES.indexOf(today));
   });
   const [dayChoice, setDayChoice] = useState<string | null>(null);
+  const [showEnforcedHours, setShowEnforcedHours] = useState(true);
   const selectedDay = dayChoice ?? (isSmallScreen ? currentDay : 'all');
   const showAll = selectedDay === 'all';
   const hasRotatedHourLabels = isSmallScreen && !showAll;
@@ -107,18 +130,26 @@ function WeeklyHourlyChart({
             {DAY_NAMES.map((day, index) => <option key={day} value={index}>{day}</option>)}
           </select>
         </div>
+        <label className="enforced-hours-toggle">
+          <input type="checkbox" checked={showEnforcedHours}
+            onChange={(event) => setShowEnforcedHours(event.target.checked)} />
+          <span>
+            Shade enforced hours
+            <small>Mon–Fri, 8am–8pm Pacific</small>
+          </span>
+        </label>
       </div>
       <div className="chart-legend" aria-label="Chart legend">
         <span><i style={{ backgroundColor: ALL_TIME_COLOR }} />Average Available Plugs (all time)</span>
         <span><i style={{ backgroundColor: THIS_WEEK_COLOR }} />Average Available Plugs (this week)</span>
+        {showEnforcedHours && <span><i style={{ backgroundColor: ENFORCED_HOURS_COLOR }} />Enforced hours (Mon–Fri, America/Los_Angeles)</span>}
       </div>
-      <BarChart
+      <ChartContainer
         height={hasRotatedHourLabels ? 420 : 360}
-        hideLegend
-        grid={{ horizontal: true }}
         margin={{ top: 12, right: chartEdgePadding, bottom: 68, left: chartEdgePadding }}
         series={[
           {
+            type: 'bar',
             label: 'All time',
             data: visibleAllTime.map((point) => visibleBarValue(point.avg_available || Number.EPSILON)),
             color: ALL_TIME_COLOR,
@@ -126,6 +157,7 @@ function WeeklyHourlyChart({
             valueFormatter: (_, context) => formatChartLabel(visibleAllTime[context.dataIndex]),
           },
           {
+            type: 'bar',
             label: 'This week',
             data: visibleThisWeek.map((point) => visibleBarValue(point.avg_available || Number.EPSILON)),
             color: THIS_WEEK_COLOR,
@@ -170,7 +202,14 @@ function WeeklyHourlyChart({
           '& .MuiChartsAxis-line, & .MuiChartsAxis-tick': { stroke: 'rgba(255, 255, 255, 0.55)' },
           '& .MuiChartsGrid-line': { stroke: 'rgba(255, 255, 255, 0.14)' },
         }}
-      />
+      >
+        {showEnforcedHours && <EnforcedHoursBackground days={showAll ? DAY_NAMES.map((_, index) => index) : [Number(selectedDay)]} />}
+        <ChartsGrid horizontal />
+        <BarPlot />
+        <ChartsAxisHighlight x="band" />
+        <ChartsAxis />
+        <ChartsTooltip />
+      </ChartContainer>
     </div>
   );
 }
